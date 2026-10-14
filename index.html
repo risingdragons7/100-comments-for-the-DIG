@@ -1,1 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raw Tetra Hydrinium Farm - Auto-Rotating Comments</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --used: #484f58;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+    line-height: 1.5;
+  }
+  h1 { text-align: center; color: var(--accent); margin-bottom: 8px; font-size: 1.7rem; }
+  .subtitle { text-align: center; color: var(--muted); margin-bottom: 20px; font-size: 0.95rem; }
+  .controls { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+  button {
+    background: var(--accent); color: #0d1117; border: none; padding: 10px 18px;
+    border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  button.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  button.success { background: var(--accent2); }
+  button.copy-one { padding: 6px 12px; font-size: 0.85rem; min-width: 70px; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .stats { text-align: center; color: var(--muted); margin-bottom: 12px; font-size: 0.9rem; }
+  #comments {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 8px; margin-bottom: 20px;
+  }
+  .comment-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+    border-bottom: 1px solid var(--border); transition: background 0.2s;
+  }
+  .comment-row:last-child { border-bottom: none; }
+  .comment-row:hover { background: rgba(88, 166, 255, 0.08); }
+  .comment-row.used { opacity: 0.65; }
+  .comment-num { color: var(--muted); font-size: 0.85rem; min-width: 36px; font-weight: 600; }
+  .comment-text {
+    flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.92rem; word-break: break-word;
+  }
+  .copy-all-wrap { text-align: center; margin-top: 10px; }
+  #copyStatus { display: block; margin-top: 10px; color: var(--accent2); font-weight: 600; min-height: 1.4em; }
+  .footer { text-align: center; margin-top: 24px; color: var(--muted); font-size: 0.8rem; }
+</style>
+</head>
+<body>
 
+<h1>Raw Tetra Hydrinium Farm</h1>
+<p class="subtitle">Copy a comment → it immediately swaps for a fresh unused one</p>
+
+<div class="controls">
+  <button id="copyAllBtn" onclick="copyAllVisible()">Copy All Visible</button>
+  <button class="secondary" onclick="resetAll()">Reset List</button>
+  <button class="secondary" onclick="downloadTxt()">Download Current</button>
+</div>
+
+<div class="stats">
+  Visible: <strong id="visibleCount">100</strong> • Remaining unique in pool: <strong id="poolCount">0</strong>
+</div>
+
+<div id="comments"></div>
+
+<div class="copy-all-wrap">
+  <span id="copyStatus"></span>
+</div>
+
+<p class="footer">For SenseiBulrog / Faded Monsuta • Each comment can only be copied once before it rotates</p>
+
+<script>
+// Larger pool of unique comments (200+)
+const pool = [
+"Hey Sensei! Farming that sweet Raw Tetra Hydrinium tonight",
+"Let's go dig for some Faded Monsuta heat!",
+"Raw Tetra Hydrinium loading... get faded with the squad",
+"SenseiBulrog is the grumpy ninja we needed",
+"!dig energy is high in this chat",
+"Who else is stacking Raw Tetra for the next dig?",
+"Faded Monsuta looking clean as always",
+"Just here for the Raw Tetra Hydrinium and the vibes",
+"Sensei dropping knowledge while we farm points",
+"Tetra Hydrinium mines are open boys",
+"Chat is locked in for that THC grind",
+"Love the Faded Monsuta card art on stream",
+"Raw Tetra Hydrinium > everything else right now",
+"Sensei is cooking tonight",
+"Digging holes and finding rocks like a true CardShark",
+"Who's got the dig booster active?",
+"Farming Raw Tetra like it's a full-time job",
+"Faded Friday energy even if it's not Friday",
+"SenseiBulrog stream is the place to be",
+"Another successful dig incoming? Let's see",
+"Raw Tetra Hydrinium stack going up",
+"Grumpy gamer energy is immaculate",
+"Love watching Sensei build decks live",
+"Tetra Hydrinium for the win",
+"Chat, keep the loyalty points flowing",
+"Faded Monsuta meta is wild right now",
+"Sensei teaching us the ways of the ninja",
+"Just chatting for that sweet Raw Tetra",
+"Who's digging after this message?",
+"Raw Tetra Hydrinium acquired",
+"The stream is lit, the chat is farming",
+"SenseiBulrog never misses",
+"Digging up empty holes is a personality trait",
+"Faded Monsuta supremacy",
+"Stacking points for Professor Bongsley's lab",
+"Raw Tetra Hydrinium is the real currency",
+"Sensei looking focused today",
+"Another message, another point closer",
+"Love the grumpy ninja aesthetic",
+"Tetra Hydrinium mines never sleep",
+"Who else is here purely for the !dig life?",
+"Sensei is the sensei of shenanigans",
+"Farming Raw Tetra while the stream cooks",
+"Faded Monsuta cards hit different",
+"Raw Tetra Hydrinium loading bar: ████████░░",
+"Chat is so locked in",
+"SenseiBulrog community is elite",
+"Just here to earn and dig",
+"Tetra Hydrinium > fiat",
+"Love when Sensei talks about the game design",
+"Digging for that I Gotta Rock energy",
+"Raw Tetra Hydrinium gang",
+"Sensei keeping it real as always",
+"Faded Monsuta is peak TCG",
+"Another chat message for the loyalty gods",
+"Who's ready to !dig after farming?",
+"Raw Tetra Hydrinium never tasted so good",
+"Sensei is on one tonight",
+"The ninja is cooking",
+"Farming points like a professional",
+"Faded Monsuta decks are getting spicy",
+"Raw Tetra Hydrinium secured",
+"SenseiBulrog stream always delivers",
+"Chat, keep it going for the digs",
+"Tetra Hydrinium is life",
+"Love the weed monster energy",
+"Just farming Raw Tetra and vibing",
+"Sensei dropping bars and cards",
+"Who else has their wallet linked for !dig?",
+"Raw Tetra Hydrinium stack looking healthy",
+"Faded Monsuta is the future",
+"Sensei is the grumpy king",
+"Another point for the collection",
+"Digging holes and taking names",
+"Raw Tetra Hydrinium for days",
+"The stream is immaculate",
+"SenseiBulrog teaching the ways",
+"Farming loyalty like it's going out of style",
+"Faded Monsuta art is fire",
+"Raw Tetra Hydrinium acquired successfully",
+"Chat is farming hard tonight",
+"Sensei is locked in",
+"Tetra Hydrinium mines are profitable",
+"Love this community",
+"Just here to get faded and earn",
+"Sensei never misses with the commentary",
+"Raw Tetra Hydrinium is the goal",
+"Faded Monsuta supremacy continues",
+"Who's digging next?",
+"SenseiBulrog is goated",
+"Farming points for the next big dig",
+"Raw Tetra Hydrinium gang rise up",
+"The grumpy ninja is on stream",
+"Love watching the game development talks",
+"Tetra Hydrinium > all other currencies",
+"Chat, let's get this dig going",
+"Sensei is the best",
+"Another message in the books",
+"Faded Monsuta forever",
+"Raw Tetra Hydrinium loading complete",
+"SenseiBulrog stream is home",
+"Farming loyalty points is a lifestyle",
+"Dig deep, chat",
+"Sensei the dig master is live",
+"Raw Tetra stack increasing",
+"Faded Monsuta decks looking dangerous",
+"Who needs more Raw Tetra Hydrinium?",
+"Chat farming mode activated",
+"SenseiBulrog dropping wisdom",
+"Tetra Hydrinium mines are booming",
+"Love the grumpy ninja streams",
+"Another dig attempt incoming",
+"Raw Tetra Hydrinium is stacking nicely",
+"Faded Monsuta is peak content",
+"Sensei cooking with gas tonight",
+"Loyalty points going brrr",
+"Who else is ready to dig?",
+"Raw Tetra for the win always",
+"The stream never disappoints",
+"SenseiBulrog community stays winning",
+"Farming that sweet THC currency",
+"Faded Monsuta art hits different",
+"Just here for the Raw Tetra grind",
+"Sensei is locked and loaded",
+"Tetra Hydrinium never runs out",
+"Chat is on farming duty",
+"Digging for legendaries",
+"Raw Tetra Hydrinium secured again",
+"Sensei the ninja sensei",
+"Faded Monsuta supremacy confirmed",
+"Another point closer to the dig",
+"Love watching Sensei work",
+"Raw Tetra Hydrinium loading...",
+"The grumpy gamer energy is real",
+"Who's stacking for Professor Bongsley?",
+"SenseiBulrog stream is elite",
+"Farming loyalty like pros",
+"Tetra Hydrinium is the way",
+"Chat keep the points flowing",
+"Faded Monsuta decks are fire",
+"Raw Tetra Hydrinium acquired once more",
+"Sensei dropping knowledge bombs",
+"Just chatting and farming",
+"Dig deep and prosper",
+"Raw Tetra Hydrinium gang forever",
+"Sensei is the best host",
+"Faded Monsuta looking spicy",
+"Another successful farm message",
+"Tetra Hydrinium mines open 24/7",
+"Love this Faded Monsuta community",
+"SenseiBulrog never misses a beat",
+"Farming Raw Tetra with the squad",
+"Who else has dig boosters ready?",
+"Raw Tetra Hydrinium is life",
+"The ninja is on the grind",
+"Faded Monsuta cards are clean",
+"Chat is farming hard",
+"Sensei cooking up something good",
+"Tetra Hydrinium for days on end",
+"Just here to stack and dig",
+"Raw Tetra Hydrinium loading complete",
+"SenseiBulrog stream delivers again",
+"Farming points is the meta",
+"Faded Monsuta forever and always",
+"Who's ready for the next dig?",
+"Raw Tetra Hydrinium stack healthy",
+"Sensei the grumpy legend",
+"Another chat message secured",
+"Tetra Hydrinium > everything",
+"Love the stream energy tonight",
+"Farming loyalty points nonstop",
+"Faded Monsuta is goated",
+"SenseiBulrog community is home",
+"Raw Tetra Hydrinium never looked better",
+"Digging holes and finding treasure",
+"Chat locked in for the grind",
+"Sensei dropping pure value",
+"Tetra Hydrinium mines are rich",
+"Just farming and vibing hard",
+"Raw Tetra Hydrinium acquired fresh",
+"Faded Monsuta decks evolving",
+"Sensei is cooking tonight for sure",
+"Who else is here for the Raw Tetra?",
+"Farming like it's a full time job",
+"Raw Tetra Hydrinium gang rise",
+"The stream is immaculate as always",
+"SenseiBulrog teaching the ways again",
+"Another point for the collection bag",
+"Tetra Hydrinium is the real deal",
+"Love when Sensei talks game design",
+"Chat keep farming those points",
+"Faded Monsuta supremacy lives on",
+"Raw Tetra Hydrinium secured successfully",
+"Sensei never misses with the commentary",
+"Just here to get faded and stack",
+"Dig deep chat, dig deep",
+"Raw Tetra Hydrinium for the long term",
+"SenseiBulrog is the grumpy king",
+"Farming loyalty like there's no tomorrow",
+"Faded Monsuta art is pure fire",
+"Who's digging after this one?",
+"Raw Tetra Hydrinium loading bar full",
+"The ninja sensei is live and cooking",
+"Chat is so locked in right now",
+"Tetra Hydrinium mines never close",
+"Sensei dropping bars and cards live",
+"Another message another point closer",
+"Faded Monsuta is peak TCG content",
+"Raw Tetra Hydrinium stack going strong",
+"Love this community so much",
+"Sensei is focused and farming ready",
+"Farming points for the big dig",
+"Tetra Hydrinium > all other currencies",
+"Just chatting for that sweet Raw Tetra",
+"SenseiBulrog stream is the place",
+"Digging up empty holes is character building",
+"Raw Tetra Hydrinium acquired once again",
+"Faded Monsuta decks looking dangerous tonight",
+"Who else is stacking Raw Tetra hard?",
+"Sensei the dig master never sleeps",
+"Chat farming mode is fully activated",
+"Tetra Hydrinium is stacking nicely now",
+"Love the grumpy ninja aesthetic always",
+"Another dig attempt on the horizon",
+"Raw Tetra Hydrinium is the goal always",
+"The stream never ever disappoints",
+"SenseiBulrog community stays elite",
+"Farming that sweet THC currency hard",
+"Faded Monsuta art hits so different",
+"Just here for the Raw Tetra grind life",
+"Sensei is locked and loaded tonight",
+"Tetra Hydrinium never runs dry",
+"Chat is on full farming duty",
+"Digging for those legendaries",
+"Raw Tetra Hydrinium secured yet again",
+"Sensei the ultimate ninja sensei",
+"Faded Monsuta supremacy confirmed again",
+"Another point closer to a big dig",
+"Love watching Sensei work the stream",
+"Raw Tetra Hydrinium loading complete",
+"The grumpy gamer energy is unmatched",
+"Who's stacking for the next lab visit?",
+"SenseiBulrog stream is pure elite",
+"Farming loyalty like true professionals",
+"Tetra Hydrinium is always the way",
+"Chat keep those loyalty points flowing",
+"Faded Monsuta decks are absolute fire",
+"Raw Tetra Hydrinium acquired fresh again",
+"Sensei dropping knowledge bombs live",
+"Just chatting and farming the points",
+"Dig deep and prosper chat",
+"Raw Tetra Hydrinium gang forever and always"
+];
+
+let remaining = [...pool];
+let visible = [];
+const VISIBLE_COUNT = 100;
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function init() {
+  remaining = shuffle([...pool]);
+  visible = remaining.splice(0, VISIBLE_COUNT);
+  render();
+}
+
+function render() {
+  const container = document.getElementById('comments');
+  container.innerHTML = '';
+  visible.forEach((text, i) => {
+    const row = document.createElement('div');
+    row.className = 'comment-row';
+    row.dataset.index = i;
+
+    const num = document.createElement('span');
+    num.className = 'comment-num';
+    num.textContent = (i + 1) + '.';
+
+    const span = document.createElement('span');
+    span.className = 'comment-text';
+    span.textContent = text;
+
+    const btn = document.createElement('button');
+    btn.className = 'copy-one';
+    btn.textContent = 'Copy';
+    btn.onclick = () => copyAndRotate(i, btn, row);
+
+    row.appendChild(num);
+    row.appendChild(span);
+    row.appendChild(btn);
+    container.appendChild(row);
+  });
+  document.getElementById('visibleCount').textContent = visible.length;
+  document.getElementById('poolCount').textContent = remaining.length;
+}
+
+function copyAndRotate(index, btn, row) {
+  const text = visible[index];
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('success');
+    row.classList.add('used');
+
+    // Replace with a new one if available
+    setTimeout(() => {
+      if (remaining.length > 0) {
+        visible[index] = remaining.shift();
+        render();
+        document.getElementById('copyStatus').textContent = '✅ Copied & rotated to a fresh comment';
+      } else {
+        btn.textContent = 'Used';
+        btn.disabled = true;
+        document.getElementById('copyStatus').textContent = '✅ Copied (pool empty — all unique comments used)';
+      }
+      setTimeout(() => {
+        document.getElementById('copyStatus').textContent = '';
+      }, 1800);
+    }, 400);
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1200);
+  });
+}
+
+function copyAllVisible() {
+  const text = visible.join('\\n');
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('copyStatus').textContent = '✅ All visible comments copied!';
+    document.getElementById('copyAllBtn').classList.add('success');
+    setTimeout(() => {
+      document.getElementById('copyStatus').textContent = '';
+      document.getElementById('copyAllBtn').classList.remove('success');
+    }, 2000);
+  });
+}
+
+function resetAll() {
+  init();
+  document.getElementById('copyStatus').textContent = 'List reset with fresh random comments';
+  setTimeout(() => document.getElementById('copyStatus').textContent = '', 1500);
+}
+
+function downloadTxt() {
+  const blob = new Blob([visible.join('\\n')], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'senseibulrog-comments-current.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+init();
+</script>
+
+</body>
+</html>
